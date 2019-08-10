@@ -58,8 +58,8 @@
             <th class="text-center" width="100">操作</th>
           </tr>
         </thead>
-        <tbody>
-          <tr>
+        <tbody id="postsBox">
+          <!-- <tr>
             <td>随便一个名称</td>
             <td>小小</td>
             <td>潮科技</td>
@@ -91,7 +91,7 @@
               <a href="javascript:;" class="btn btn-default btn-xs">编辑</a>
               <a href="javascript:;" class="btn btn-danger btn-xs">删除</a>
             </td>
-          </tr>
+          </tr> -->
         </tbody>
       </table>
     </div>
@@ -136,6 +136,56 @@
 
   <script src="../assets/vendors/jquery/jquery.js"></script>
   <script src="../assets/vendors/bootstrap/js/bootstrap.js"></script>
+  <!-- 引入模板引擎 -->
+  <script src="../assets/vendors/art-template/template-web.js"></script>
+  <!-- 设置文章显示模板 -->
+  <script type="text/html" id="userAriteTpl">
+    {{each records}}
+    <tr>
+      <td>{{$value.title}}</td>
+      <td>{{$value.author.nickName}}</td>
+      <td>{{$value.category.title}}</td>
+      <td class="text-center">{{$imports.dateFormat($value.category.createAt)}}</td>
+      <td class="text-center">{{$value.state==0?'草稿':'已发布'}}</td>
+      <td class="text-center" data-id="{{@$value._id}}">
+        <a href="javascript:;" class="btn btn-default btn-xs">编辑</a>
+        <a href="javascript:;" class="btn btn-danger btn-xs">删除</a>
+      </td>
+    </tr>
+    {{/each}}
+  </script>
+  <script>
+    // 用一个空集合 来收集文章集合
+    let postsAry=new Array
+    //  发送ajax获取文章集合数据 用模板渲染到页面上
+    $.ajax({
+      type:"get",
+      url:"/posts",
+      success:function(res){
+        // console.log(res);
+        // 把数据给postsAry
+        postsAry=res;
+        render(postsAry);
+      }
+    })
+  
+    // 封装渲染方法
+    function render(arr){
+          // 调用template方法
+          let str=template("userAriteTpl",arr)
+        // 填写到tbody中
+        $("#postsBox").html(str)
+    }
+    // 定义时间格式方法
+    function dateFormat(data){
+      date=new Date(data)
+      return date.getFullYear()+"-"+(date.getMonth()-0+1).toString().padStart(2,0)+"-"+date.getDate().toString().padStart(2,0)
+
+    }
+  </script>
+
+
+
   <script>NProgress.done()</script>
 </body>
 </html>

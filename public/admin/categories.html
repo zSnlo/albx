@@ -30,18 +30,19 @@
       </div> -->
       <div class="row">
         <div class="col-md-4">
-          <form>
+          <form id="cForm">
             <h2>添加分类</h2>
             <div class="form-group">
               <label>名称</label>
-              <input class="form-control" type="text" placeholder="请输入分类名称">
+              <input class="form-control" type="text" placeholder="请输入分类名称" name="title" id="title">
             </div>
             <div class="form-group">
               <label>图标</label>
-              <input class="form-control" type="text" placeholder="请输入分类图标类名">
+              <input class="form-control" type="text" placeholder="请输入分类图标类名" name="className" id="className">
             </div>
             <div class="form-group">
-              <button class="btn btn-primary" type="submit">添加</button>
+              <button class="btn btn-primary" type="button" id="add">添加</button>
+              <button class="btn btn-primary" type="button" id="addEdit" style="display: none">修改</button>
             </div>
           </form>
         </div>
@@ -54,11 +55,12 @@
               <tr>
                 <th class="text-center" width="40"><input type="checkbox"></th>
                 <th>名称</th>
+                <th>图标类名</th>
                 <th class="text-center" width="100">操作</th>
               </tr>
             </thead>
-            <tbody>
-              <tr>
+            <tbody id="cTbodyBox">
+              <!-- <tr>
                 <td class="text-center"><input type="checkbox"></td>
                 <td>奇趣事</td>
                 <td class="text-center">
@@ -81,7 +83,7 @@
                   <a href="javascript:;" class="btn btn-info btn-xs">编辑</a>
                   <a href="javascript:;" class="btn btn-danger btn-xs">删除</a>
                 </td>
-              </tr>
+              </tr> -->
             </tbody>
           </table>
         </div>
@@ -127,6 +129,130 @@
   </div>
   <script src="../assets/vendors/jquery/jquery.js"></script>
   <script src="../assets/vendors/bootstrap/js/bootstrap.js"></script>
+  <!-- 引入模板引擎 -->
+  <script src="../assets/vendors/art-template/template-web.js"></script>
+  <!-- 定义模板 --> 
+  <script type="text/template" id="cTemp">
+    {{each list}}
+      <tr>
+        <td class="text-center"><input type="checkbox"></td>
+        <td>{{$value.title}}</td>
+        <td>{{$value.className}}</td>
+        <td class="text-center" data-id="{{@$value._id}}">
+          <a href="javascript:;" class="btn btn-info btn-xs cEdit">编辑</a>
+          <a href="javascript:;" class="btn btn-danger btn-xs del">删除</a>
+        </td>
+      </tr>
+    {{/each}}
+  </script>
+  <script>
+    // 封装渲染模板方法
+    function render(arr){
+    let html= template("cTemp",{list:arr});
+        // console.log(html);
+        $("#cTbodyBox").html(html)
+    };
+    // 声明一个空数组来驱动文章集合
+    let cAry=new Array();
+
+    // 实现文章分类列表
+    // 发送ajax
+    $.ajax({
+        type:"get",
+        url:"/categories",
+        success:function(res){
+          // console.log(res);
+          cAry=res;
+          // console.log(cAry);
+          
+          // 渲染模板
+          render(cAry);
+        }
+      })
+    // 实现文章分类添加功能 给提交注册点击事件
+    $("#add").on("click",function(){
+      // 获取表单属性
+      let fData= $("#cForm").serialize();
+      console.log(fData);
+      // 发送ajax
+      $.ajax({
+        type:"post",
+        url:"/categories",
+        data: fData,
+        success: function(res){
+          // console.log(res);
+          cAry.push(res);
+          render(cAry)
+        }
+      })
+    })
+
+    // 实现文章分类列表修改 给修改按钮注册点击事件  使用到了事件委托 
+    // 给修改按钮的父级元素绑定点击事件
+    let uid;
+    $("#cTbodyBox").on("click",".cEdit",function(){
+      uid=$(this).parent().attr("data-id")
+      $('#cForm > h2').text('修改分类');
+      // 先获取 当前被点击这个元素的祖先 叫tr 
+      var trObja = $(this).parents('tr');
+      // 通过当前的元素 查找表单内容
+      let trObj= $(this).parents("tr").children();
+      // 获取到的内容添加到左边
+      $("#title").val(trObj.eq(1).text());
+      $("#className").val(trObj.eq(2).text());
+      $("#addEdit").show();
+      $("#add").hide();
+    })
+    // 给addEdit绑定点击事件 
+    $("#addEdit").on("click",function(){
+      // 获取到表单 属性
+      // console.log($("#cForm").serialize());
+      // 发送ajax
+      $.ajax({
+        type:"put",
+        url:"/categories/"+uid,
+        data:$("#cForm").serialize(),
+        success:function(res){
+          // console.log(res);
+          // 更新数组
+          let index= cAry.findIndex(item=>item._id==res._id)
+          cAry[index]=res;
+          render(cAry);
+          $("#title").val("");
+          $("#className").val("");
+          $("#addEdit").hide();
+          $("#add").show();
+        }
+      })
+    })
+    // 实现单个删除
+    // 点击删除按钮 注册点击事件 使用事件委托
+    $("#cTbodyBox").on("click",".del",function(){
+      // 获取自定义id
+      let cId= $(this).parent().attr("data-id");
+      // console.log(cId);
+      if(confirm('你确定要删除当前分类嘛？')){
+        $.ajax({
+          type:"delete",
+          url:"/categories/"+cId,
+          success:function(res){
+            // console.log(res);
+            // 根据返回的删除数据 去删除数组内相对应 
+             let index=cAry.findIndex(item=>item._id==res._id);
+             cAry.splice(index,1);
+             render(cAry)
+          }
+        })
+      }
+    })
+
+
+
+
+
+  </script>
+
+
   <script>NProgress.done()</script>
 </body>
 </html>

@@ -35,7 +35,7 @@
             <input id="title" class="form-control input-lg" name="title" type="text" placeholder="文章标题">
           </div>
           <div class="form-group">
-            <label for="content">标题</label>
+            <label for="content">内容</label>
             <textarea id="content" class="form-control input-lg" name="content" cols="30" rows="10" placeholder="内容"></textarea>
           </div>
         </div>
@@ -43,29 +43,30 @@
           <div class="form-group">
             <label for="feature">特色图像</label>
             <!-- show when image chose -->
-            <img class="help-block thumbnail" style="display: none">
+            <img class="help-block thumbnail" style="display: none" id="thumbnailImg">
             <input id="feature" class="form-control" name="feature" type="file">
+            <input type="hidden" name="thumbnail" id="thumbnail">
           </div>
           <div class="form-group">
             <label for="category">所属分类</label>
-            <select id="category" class="form-control" name="category">
-              <option value="1">未分类</option>
-              <option value="2">潮生活</option>
+            <select id="category" class="form-control" name="category" >
+              <!-- <option value="1">未分类</option>
+              <option value="2">潮生活</option> -->
             </select>
           </div>
           <div class="form-group">
             <label for="created">发布时间</label>
-            <input id="created" class="form-control" name="created" type="datetime-local">
+            <input id="created" class="form-control" name="createAt" type="datetime-local">
           </div>
           <div class="form-group">
             <label for="status">状态</label>
-            <select id="status" class="form-control" name="status">
-              <option value="drafted">草稿</option>
-              <option value="published">已发布</option>
+            <select id="status" class="form-control" name="state">
+              <option value="0">草稿</option>
+              <option value="1">已发布</option>
             </select>
           </div>
           <div class="form-group">
-            <button class="btn btn-primary" type="submit">保存</button>
+            <button class="btn btn-primary" type="button" id="addArticle">保存</button>
           </div>
         </div>
       </form>
@@ -111,6 +112,75 @@
 
   <script src="../assets/vendors/jquery/jquery.js"></script>
   <script src="../assets/vendors/bootstrap/js/bootstrap.js"></script>
+  <!-- 引入模板引擎 -->
+  <script src="../assets/vendors/art-template/template-web.js"></script>
+  <!-- 定义下拉列表模板 -->
+  <script type="text/html" id="cTpl">
+    {{each data}}
+    <option value="{{@$value._id}}">{{$value.title}}</option>
+    {{/each}}
+  </script>
+  <script>
+    // 获取文章分类数据 并把它填写到文章添加的 分类列表中
+    $.ajax({
+      type:"get",
+      url:"/categories",
+      success:function(res){
+        // console.log(res);
+        // 把获取的数据用模板渲染到页面中
+        let html= template("cTpl",{data:res})
+        $("#category").html(html)
+      }
+    })
+    // 实现文章图片上传 预览  
+    // 给feature注册change事件
+    $("#feature").on("change",function(){
+      // console.log(this.files[0]);
+      // 创建fromdata表单
+      let formData=new FormData();
+      // 添加自定义属性
+      formData.append("avatar",this.files[0])
+      // 发送ajax
+      $.ajax({
+        type:"post",
+        url:"/upload",
+        data:formData,
+         // 告诉$.ajax方法不要解析请求参数
+         processData: false,
+        // 告诉$.ajax方法不要设置请求参数的类型
+        contentType: false,
+        success:function(res){
+          // console.log(res[0].avatar);
+          // 获取到的是上传图片的相对路径 并没有存入数据库
+          //我们需要把他传入提前写好的隐藏域中  一并提交给数据库
+          $("#thumbnail").val(res[0].avatar);
+          // 把路径写入到img标签中 能实现预览功能
+          $("#thumbnailImg").attr("src",res[0].avatar).show();
+        }
+      })
+    })
+    // 对照接口文档 给表单添加name属性  给保存按钮注册点击事件
+    $("#addArticle").on("click",function(){
+      // 获取提交的数据
+      let forData=$(".row").serialize();
+      // console.log(forData);
+      // 发送ajax
+      $.ajax({
+        type:"post",
+        url:"/posts",
+        data:forData,
+        success:function(){
+          // 添加成功 跳转到文章列表页面
+          location.href="/admin/posts.html";
+        }
+      })
+    })
+
+
+
+
+  
+  </script>
   <script>NProgress.done()</script>
 </body>
 </html>

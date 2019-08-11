@@ -83,8 +83,11 @@ $("#tbody").on("click",".edit",function(){
     // 对用户啊状态进行判断  给相应的标签加checked属性
     let status=trObj.eq(4).text();
     // console.log(status);
+    // $("#jh").attr('checked','false');
+    // $("#wjh").attr('checked','false');
     if(status=="激活"){
-        $("#jh").attr('checked','turn')
+        $("#jh").attr('checked','turn');
+        
     }else{
         $("#wjh").attr('checked','turn')
     }
@@ -95,10 +98,16 @@ $("#tbody").on("click",".edit",function(){
         $("#admin").attr("checked","turn")
     }else{
         $("#normal").attr("checked","turn")
-    }
+    };
+    // 把修改按钮显示出来 添加按钮隐藏
+    $("#btn").hide();
+    $("#btnEdit").show();
 })
 // 实现修改功能
-
+// 给修改按钮注册点击事件
+$("#btnEdit").on("click",function(){
+    
+})
 
 // 实现单个删除功能 给删除按钮注册点击事件 使用到了事件委托
 $("#tbody").on("click",".detele",function(){

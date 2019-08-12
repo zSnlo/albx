@@ -29,22 +29,22 @@
         <!-- show when multiple checked -->
         <a class="btn btn-danger btn-sm" href="javascript:;" style="display: none">批量删除</a>
         <form class="form-inline">
-          <select name="" class="form-control input-sm">
-            <option value="">所有分类</option>
+          <select name="category" class="form-control input-sm" id="articleAll">
+            <option value="all">所有分类</option>
           </select>
-          <select name="" class="form-control input-sm">
-            <option value="">所有状态</option>
-            <option value="">草稿</option>
-            <option value="">已发布</option>
+          <select name="state" class="form-control input-sm" id="state">
+            <option value="all">所有状态</option>
+            <option value="0">草稿</option>
+            <option value="1">已发布</option>
           </select>
-          <button class="btn btn-default btn-sm">筛选</button>
+          <button class="btn btn-default btn-sm" type="button" id="filtrate">筛选</button>
         </form>
-        <ul class="pagination pagination-sm pull-right">
-          <li><a href="#">上一页</a></li>
+        <ul class="pagination pagination-sm pull-right" id="pageBox">
+          <!-- <li><a href="#">上一页</a></li>
           <li><a href="#">1</a></li>
           <li><a href="#">2</a></li>
           <li><a href="#">3</a></li>
-          <li><a href="#">下一页</a></li>
+          <li><a href="#">下一页</a></li> -->
         </ul>
       </div>
       <table class="table table-striped table-bordered table-hover">
@@ -148,44 +148,115 @@
       <td class="text-center">{{$imports.dateFormat($value.category.createAt)}}</td>
       <td class="text-center">{{$value.state==0?'草稿':'已发布'}}</td>
       <td class="text-center" data-id="{{@$value._id}}">
-        <a href="javascript:;" class="btn btn-default btn-xs">编辑</a>
+        <a href="/admin/post-add.html?id={{@$value._id}}" class="btn btn-default btn-xs">编辑</a>
         <a href="javascript:;" class="btn btn-danger btn-xs">删除</a>
       </td>
     </tr>
     {{/each}}
   </script>
+  <!-- 设置文章分页模板 -->
+  <script type="text/html" id="pageTpl">
+    {{if page>1}}
+    <li><a href="javascript:;" onclick="pageChange({{page-1}})">上一页</a></li>
+    {{/if}}
+    {{each display}}
+    <li  class="{{$value == page ? 'active' : ''}}"><a href="javascript:;" onclick="pageChange({{$value}})">{{$value}}</a></li>
+    {{/each}}
+    {{if pages >page}}
+    <li><a href="javascript:;" onclick="pageChange({{page-0+1}})">下一页</a></li>
+    {{/if}}
+  </script>
+
+  <!-- 下拉框 文章分类模板 -->
+  <script type="text/html" id="articleTpl">
+    {{each data}}
+    <option value="{{@$value._id}}">{{$value.title}}</option>
+    {{/each}}
+  </script>
   <script>
     // 用一个空集合 来收集文章集合
-    let postsAry=new Array
+    let postsAry=new Array();
     //  发送ajax获取文章集合数据 用模板渲染到页面上
-    $.ajax({
-      type:"get",
+    // $.ajax({
+    //   type:"GET",
+    //   url:"/posts",
+    //   success:function(res){
+    //     console.log(res);
+    //     // 把数据给postsAry
+    //     // postsAry=res;
+    //     let str=template("userAriteTpl",res);
+    //     // 填写到tbody中
+    //     $("#postsBox").html(str);
+
+    //     // 实现文章无刷新分页功能 获取分页数据
+    //     let html=template("pageTpl",res);
+    //     $("#pageBox").html(html);
+    //   }
+    // })
+    // 封装渲染方法
+    function render(page=1,category="all",state="all"){
+      // console.log(category,state);
+      $.ajax({
+      type:"GET",
       url:"/posts",
+      data:{
+        page:page||1,
+        category:category,
+        state:state,
+      },
       success:function(res){
         // console.log(res);
         // 把数据给postsAry
-        postsAry=res;
-        render(postsAry);
-      }
-    })
-  
-    // 封装渲染方法
-    function render(arr){
-          // 调用template方法
-          let str=template("userAriteTpl",arr)
+        // postsAry=res;
+        let str=template("userAriteTpl",res);
         // 填写到tbody中
-        $("#postsBox").html(str)
+        $("#postsBox").html(str);
+        // 实现文章无刷新分页功能 获取分页数据
+        let html=template("pageTpl",res);
+        $("#pageBox").html(html);
+        }
+      })
     }
+    render();
+   
+    // 实现文章筛选功能
+    // 发送ajax 获取文章分类列表数据 渲染到页面上
+    $.ajax({
+      type:"get",
+      url:"/categories",
+      success:function(res){
+        // console.log(res);
+        let html= template("articleTpl",{data:res});
+        $("#articleAll").append(html) 
+      }
+    });
+    // 给筛选按钮添加点击事件
+    $("#filtrate").on("click",function(){
+      //向渲染方法中传递两个参数 category(所属分类) state(所处状态)
+      let c= $("#articleAll").val();
+      // console.log(category);
+      let s= $("#state").val();
+      // console.log(state);
+      render(1,c,s)
+    });
+
+    // 编辑文章功能  需要跳转到文章添加页面 并携带相应的id过去  给编辑的a标签添加地址
+
+
+    
     // 定义时间格式方法
     function dateFormat(data){
       date=new Date(data)
       return date.getFullYear()+"-"+(date.getMonth()-0+1).toString().padStart(2,0)+"-"+date.getDate().toString().padStart(2,0)
 
     }
+    //定义分页函数 
+    function pageChange(page){
+      render(page)
+    }
   </script>
 
-
-
+  
   <script>NProgress.done()</script>
 </body>
 </html>

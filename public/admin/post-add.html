@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
+
 <head>
   <meta charset="utf-8">
   <title>Add new post &laquo; Admin</title>
@@ -9,6 +10,7 @@
   <link rel="stylesheet" href="../assets/css/admin.css">
   <script src="../assets/vendors/nprogress/nprogress.js"></script>
 </head>
+
 <body>
   <script>NProgress.start()</script>
 
@@ -28,7 +30,7 @@
       <!-- <div class="alert alert-danger">
         <strong>错误！</strong>发生XXX错误
       </div> -->
-      <form class="row">
+      <form class="row" id="cform">
         <div class="col-md-9">
           <div class="form-group">
             <label for="title">标题</label>
@@ -36,7 +38,8 @@
           </div>
           <div class="form-group">
             <label for="content">内容</label>
-            <textarea id="content" class="form-control input-lg" name="content" cols="30" rows="10" placeholder="内容"></textarea>
+            <textarea id="content" class="form-control input-lg" name="content" cols="30" rows="10"
+              placeholder="内容"></textarea>
           </div>
         </div>
         <div class="col-md-3">
@@ -49,7 +52,7 @@
           </div>
           <div class="form-group">
             <label for="category">所属分类</label>
-            <select id="category" class="form-control" name="category" >
+            <select id="category" class="form-control" name="category">
               <!-- <option value="1">未分类</option>
               <option value="2">潮生活</option> -->
             </select>
@@ -67,6 +70,7 @@
           </div>
           <div class="form-group">
             <button class="btn btn-primary" type="button" id="addArticle">保存</button>
+            <button class="btn btn-primary" type="button" id="editArticle" style="display: none">修改</button>
           </div>
         </div>
       </form>
@@ -121,66 +125,135 @@
     {{/each}}
   </script>
   <script>
-    // 获取文章分类数据 并把它填写到文章添加的 分类列表中
-    $.ajax({
-      type:"get",
-      url:"/categories",
-      success:function(res){
+    
+    
+      // 添加文章页面
+      // 获取文章分类数据 并把它填写到文章添加的 分类列表中
+      $.ajax({
+      type: "get",
+      url: "/categories",
+      success: function (res) {
         // console.log(res);
         // 把获取的数据用模板渲染到页面中
-        let html= template("cTpl",{data:res})
+        let html = template("cTpl", { data: res })
         $("#category").html(html)
       }
     })
     // 实现文章图片上传 预览  
     // 给feature注册change事件
-    $("#feature").on("change",function(){
+    $("#feature").on("change", function () {
       // console.log(this.files[0]);
       // 创建fromdata表单
-      let formData=new FormData();
+      let formData = new FormData();
       // 添加自定义属性
-      formData.append("avatar",this.files[0])
+      formData.append("avatar", this.files[0])
       // 发送ajax
       $.ajax({
-        type:"post",
-        url:"/upload",
-        data:formData,
-         // 告诉$.ajax方法不要解析请求参数
-         processData: false,
+        type: "post",
+        url: "/upload",
+        data: formData,
+        // 告诉$.ajax方法不要解析请求参数
+        processData: false,
         // 告诉$.ajax方法不要设置请求参数的类型
         contentType: false,
-        success:function(res){
+        success: function (res) {
           // console.log(res[0].avatar);
           // 获取到的是上传图片的相对路径 并没有存入数据库
           //我们需要把他传入提前写好的隐藏域中  一并提交给数据库
           $("#thumbnail").val(res[0].avatar);
           // 把路径写入到img标签中 能实现预览功能
-          $("#thumbnailImg").attr("src",res[0].avatar).show();
+          $("#thumbnailImg").attr("src", res[0].avatar).show();
         }
       })
     })
     // 对照接口文档 给表单添加name属性  给保存按钮注册点击事件
-    $("#addArticle").on("click",function(){
+    $("#addArticle").on("click", function () {
       // 获取提交的数据
-      let forData=$(".row").serialize();
+      let forData = $(".row").serialize();
       // console.log(forData);
       // 发送ajax
       $.ajax({
-        type:"post",
-        url:"/posts",
-        data:forData,
-        success:function(){
+        type: "post",
+        url: "/posts",
+        data: forData,
+        success: function () {
           // 添加成功 跳转到文章列表页面
-          location.href="/admin/posts.html";
+          location.href = "/admin/posts.html";
         }
       })
     })
-
-
-
-
-  
+    
+    
+    // 判读地址栏中是否有id 有则是文章修改  
+    if(searchId()!=-1){
+      // 编辑文章页面
+      // 根据id获取到数据 把它们添加到页面中
+      $.ajax({
+        type:"get",
+        url:"/posts/"+searchId(),
+        success:function(res){
+          console.log(res);
+          // 页面主题
+          $(".page-title > h1").text("修改文章");
+          // 标题
+          $("#title").val(res.title);
+          // 内容
+          $("#content").val(res.content);
+          // 所属分类
+          $("#category").val(res.category).prop("select");
+          // 发布时间
+          $("#created").val(res.updateAt.substr(0,16));
+          // 装态
+          $("#status").val(res.state).prop("select")
+          // 预览图片
+          $("#thumbnailImg").attr("src",res.thumbnail||null).show();
+          // 把图片地址写到隐藏域里
+          $("#thumbnail").val(res.thumbnail);
+          // 把修改按钮显示出来 
+          $("#editArticle").show();
+          $("#addArticle").hide();
+        }
+      })
+    }
+    // 给修改按钮注册点击事件
+    $("#editArticle").on("click",function(){
+      // 收集表单数据
+      let formData= $("#cform").serialize();
+      // console.log(formData);
+      // 发送ajax
+      $.ajax({
+        type:"put",
+        url:"/posts/"+searchId(),
+        data:formData,
+        success:function(){
+          // 修改成功 跳转到文章列表展示页面
+          location.href="/admin/posts.html"
+        }
+      })
+    })
+   
+    // 封装获取地址栏id方法
+    function searchId() {
+      // 获取到搜索内容 的id
+      let search = location.search;
+      // console.log(search);
+      // 对获取的内容进行截取 拆分 获得是是一个数组
+      let searchA = search.substr(1).split("&");
+      // console.log(searchA);
+      let id;
+      $(searchA).each(function (index, value) {
+        // console.log(index,value);
+        let v=value.split("=");
+        // console.log(v);
+        if (v[0] == "id") {
+          id=v[1]
+        }
+      })
+      return id ? id : -1
+    }
+    // console.log(searchId());
   </script>
   <script>NProgress.done()</script>
 </body>
+
 </html>

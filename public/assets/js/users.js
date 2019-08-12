@@ -61,7 +61,10 @@ $("#avatar").on('change',function(){
 })
 //实现用户修改 给修改按钮注册点击事件  使用到了事件委托 
 // 写在HTML中已有的父级元素身上
+// 获取到修改数据的id
+let userId;
 $("#tbody").on("click",".edit",function(){
+    userId=$(this).parent().attr("data-id")
     $('#userForm > h2').text('修改用户');
     // 先获取 当前被点击这个元素的祖先 叫tr 
      var trObja = $(this).parents('tr');
@@ -106,6 +109,36 @@ $("#tbody").on("click",".edit",function(){
 // 实现修改功能
 // 给修改按钮注册点击事件
 $("#btnEdit").on("click",function(){
+    // 获取到提交的表单内容
+    let formData=$("#userForm").serialize();
+    // console.log(formData);
+    // 发送ajax
+    $.ajax({
+        type:"put",
+        url:"/users/"+userId,
+        data:formData,
+        success:function(res){
+            console.log(res);
+            // 修改数组中相应的数据
+            let index= userAry.findIndex(item=>item._id==res._id)
+            // 将修改的数据替换数组中相应的数据
+            userAry[index]=res;
+            // 渲染到页面上
+            render(userAry);
+            // 修改完后左侧显示添加用户的界面
+            $('#userForm > h2').text('添加用户');
+            $("#btn").show();
+            $("#btnEdit").hide();
+            $('#preview').attr('src',"../assets/img/default.png");
+            $("#hiddenAvatar").val("");
+            $("#email").val('');
+            $("#nickName").val('');
+            $("#jh").attr('checked',false);
+            $("#wjh").attr('checked',false);
+            $("#admin").attr("checked",false);
+            $("#normal").attr("checked",false);
+        }
+    })
     
 })
 
